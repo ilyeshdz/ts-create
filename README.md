@@ -13,8 +13,11 @@ High-level scaffolding framework built on ts-treegen.
 - **prompt-driven generation:** `text()`, `confirm()`, and `select()` prompts, fully typed.
 - **type-safe answers:** your template function knows the exact shape of user input.
 - **`packageJson()` helper:** declare dependencies as names (latest auto-resolved) or pin versions.
+- **folder compiler:** `ts-create <folder>` — reverse-engineer any existing project into a reusable `generator.ts` scaffold.
 
 ## quick start
+
+### as a library
 
 ```ts
 import { generator, text, confirm, select, packageJson } from "@ilyeshdz/ts-create";
@@ -40,6 +43,18 @@ await generator({
       file("README.md", `# ${answers.name}`),
     ]),
 });
+
+### as a CLI
+
+```sh
+ts-create <source-folder> [output-dir]
+```
+
+Compile any existing folder into a `generator.ts` scaffold, with file contents split into `_contents/` modules. Respects `.gitignore`, skips hidden files and lockfiles.
+
+```sh
+$ ts-create ./my-project ./scaffolds
+# → generator.ts written to scaffolds/generator.ts
 ```
 
 ## license
