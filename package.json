@@ -2,7 +2,7 @@
   "name": "@ilyeshdz/ts-create",
   "version": "0.1.0",
   "private": false,
-  "description": "High-level scaffolding framework and blueprint compiler built on ts-treegen",
+  "description": "High-level scaffolding framework built on ts-treegen",
   "homepage": "https://github.com/ilyeshdz/ts-create#readme",
   "bugs": {
     "url": "https://github.com/ilyeshdz/ts-create/issues"
