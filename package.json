@@ -1,6 +1,6 @@
 {
   "name": "@ilyeshdz/ts-create",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "High-level scaffolding framework and folder compiler built on ts-treegen",
   "homepage": "https://github.com/ilyeshdz/ts-create#readme",
