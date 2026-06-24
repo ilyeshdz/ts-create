@@ -12,21 +12,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm run fmt:check
+      - run: pnpm fmt:check
 
-      - run: pnpm run lint
+      - run: pnpm lint
 
-      - run: pnpm run typecheck
+      - run: pnpm typecheck
 
-      - run: pnpm run test
+      - run: pnpm test
 
-      - run: pnpm run build
+      - run: pnpm build
