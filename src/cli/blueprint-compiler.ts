@@ -130,6 +130,7 @@ async function walkDirectory(
     const fullPath = join(dirPath, entry.name);
 
     if (entry.isSymbolicLink()) continue;
+    if (entry.name.startsWith(".")) continue;
 
     const relPath = relative(sourcePath, fullPath);
 
