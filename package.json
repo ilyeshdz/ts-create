@@ -1,5 +1,5 @@
 {
-  "name": "ts-create",
+  "name": "@ilyeshdz/ts-create",
   "version": "0.1.0",
   "description": "High-level scaffolding framework and blueprint compiler built on ts-treegen",
   "homepage": "https://github.com/ilyeshdz/ts-create#readme",
@@ -7,7 +7,7 @@
     "url": "https://github.com/ilyeshdz/ts-create/issues"
   },
   "license": "MIT",
-  "author": "ts-create contributors",
+  "author": "@ilyeshdz/ts-create contributors",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ilyeshdz/ts-create.git"
