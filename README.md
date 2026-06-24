@@ -2,9 +2,9 @@
 
 High-level scaffolding framework and blueprint compiler built on ts-treegen.
 
-[![Open on npmx.dev](https://npmx.dev/api/registry/badge/version/%40ilyeshdz%2Fts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
-[![Open on npmx.dev](https://npmx.dev/api/registry/badge/size/%40ilyeshdz%2Fts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
-[![Open on npmx.dev](https://npmx.dev/api/registry/badge/license/%40ilyeshdz%2Fts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
+[![Open on npmx.dev](https://npmx.dev/api/registry/badge/version/@ilyeshdz/ts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
+[![Open on npmx.dev](https://npmx.dev/api/registry/badge/size/@ilyeshdz/ts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
+[![Open on npmx.dev](https://npmx.dev/api/registry/badge/license/@ilyeshdz/ts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
 
 `@ilyeshdz/ts-create` is a thin layer on top of [ts-treegen](https://github.com/ilyeshdz/ts-treegen) that adds interactive prompts and type-safe answer inference. define prompts as data, wire them to a file tree, and generate files — all in typescript.
 
