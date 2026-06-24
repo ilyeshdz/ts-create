@@ -19,7 +19,7 @@ High-level scaffolding framework built on ts-treegen.
 
 ### as a library
 
-```ts
+````ts
 import { generator, text, confirm, select, packageJson } from "@ilyeshdz/ts-create";
 import { file, dir } from "ts-treegen";
 
@@ -48,7 +48,7 @@ await generator({
 
 ```sh
 ts-create <source-folder> [output-dir]
-```
+````
 
 Compile any existing folder into a `generator.ts` scaffold, with file contents split into `_contents/` modules. Respects `.gitignore`, skips hidden files and lockfiles.
 
