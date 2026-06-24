@@ -1,6 +1,7 @@
 {
   "name": "@ilyeshdz/ts-create",
   "version": "0.1.0",
+  "private": false,
   "description": "High-level scaffolding framework and blueprint compiler built on ts-treegen",
   "homepage": "https://github.com/ilyeshdz/ts-create#readme",
   "bugs": {
@@ -35,6 +36,9 @@
     "lint:fix": "oxlint --fix",
     "prepare": "husky",
     "prepublishOnly": "pnpm run build"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@clack/prompts": "^1.6.0",
