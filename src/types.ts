@@ -1,6 +1,6 @@
 import type { PlateNode, VirtualFile } from "ts-treegen";
 
-export interface TextPrompt<TId extends string> {
+export interface TextAction<TId extends string> {
   readonly type: "text";
   readonly id: TId;
   readonly question: string;
@@ -8,14 +8,14 @@ export interface TextPrompt<TId extends string> {
   readonly default?: string;
 }
 
-export interface ConfirmPrompt<TId extends string> {
+export interface ConfirmAction<TId extends string> {
   readonly type: "confirm";
   readonly id: TId;
   readonly question: string;
   readonly default?: boolean;
 }
 
-export interface SelectPrompt<TId extends string, TOption extends string> {
+export interface SelectAction<TId extends string, TOption extends string> {
   readonly type: "select";
   readonly id: TId;
   readonly question: string;
@@ -23,31 +23,24 @@ export interface SelectPrompt<TId extends string, TOption extends string> {
   readonly default?: TOption;
 }
 
-export type Prompt<TId extends string = string> =
-  | TextPrompt<TId>
-  | ConfirmPrompt<TId>
-  | SelectPrompt<TId, string>;
+export type PromptAction<TId extends string = string> =
+  | TextAction<TId>
+  | ConfirmAction<TId>
+  | SelectAction<TId, string>;
 
-export type ExtractAnswers<T extends readonly Prompt[]> = {
+export type ExtractAnswers<T extends readonly PromptAction[]> = {
   [K in T[number] as K extends { readonly id: infer I }
     ? I extends string
       ? I
       : never
-    : never]: K extends TextPrompt<any>
+    : never]: K extends TextAction<any>
     ? string
-    : K extends ConfirmPrompt<any>
+    : K extends ConfirmAction<any>
       ? boolean
-      : K extends SelectPrompt<any, infer O>
+      : K extends SelectAction<any, infer O>
         ? O
         : never;
 };
-
-export interface GeneratorConfig<TPrompts extends readonly Prompt[]> {
-  name: string;
-  prompts: TPrompts;
-  template: (ctx: { answers: ExtractAnswers<TPrompts> }) => any;
-  onSuccess?: (ctx: { answers: ExtractAnswers<TPrompts> }) => void;
-}
 
 export type DepItem = string | { readonly name: string; readonly version?: string };
 

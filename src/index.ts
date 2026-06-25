@@ -1,20 +1,18 @@
 import { emit, write } from "ts-treegen";
 import * as clack from "@clack/prompts";
 import type {
-  Prompt,
-  GeneratorConfig,
+  PromptAction,
   ExtractAnswers,
-  TextPrompt,
-  ConfirmPrompt,
-  SelectPrompt,
+  TextAction,
+  ConfirmAction,
+  SelectAction,
 } from "./types.js";
 export type {
-  Prompt,
-  GeneratorConfig,
+  PromptAction,
   ExtractAnswers,
-  TextPrompt,
-  ConfirmPrompt,
-  SelectPrompt,
+  TextAction,
+  ConfirmAction,
+  SelectAction,
   DepItem,
   PackageJsonConfig,
 } from "./types.js";
@@ -25,7 +23,7 @@ export function text<TId extends string>(
   id: TId,
   question: string,
   opts?: { placeholder?: string; default?: string },
-): TextPrompt<TId> {
+): TextAction<TId> {
   return { type: "text", id, question, ...opts };
 }
 
@@ -33,7 +31,7 @@ export function confirm<TId extends string>(
   id: TId,
   question: string,
   opts?: { default?: boolean },
-): ConfirmPrompt<TId> {
+): ConfirmAction<TId> {
   return { type: "confirm", id, question, ...opts };
 }
 
@@ -42,11 +40,11 @@ export function select<TId extends string, TOption extends string>(
   question: string,
   options: readonly TOption[],
   opts?: { default?: TOption },
-): SelectPrompt<TId, TOption> {
+): SelectAction<TId, TOption> {
   return { type: "select", id, question, options, ...opts };
 }
 
-async function runPrompt(p: Prompt): Promise<unknown> {
+async function runPrompt(p: PromptAction): Promise<unknown> {
   let result: unknown;
 
   switch (p.type) {
@@ -82,28 +80,61 @@ async function runPrompt(p: Prompt): Promise<unknown> {
   return result;
 }
 
-export async function generator<TPrompts extends readonly Prompt[]>(
-  config: GeneratorConfig<TPrompts>,
-): Promise<void> {
-  const answers: Record<string, unknown> = {};
+export function generator(config: { name: string }): GeneratorBuilder<[]> {
+  return new GeneratorBuilder(config.name);
+}
 
-  clack.intro(`ts-create: ${config.name}`);
+export class GeneratorBuilder<TPrompts extends readonly PromptAction[] = []> {
+  constructor(
+    private name: string,
+    private prompts: PromptAction[] = [],
+  ) {}
 
-  for (const prompt of config.prompts) {
-    answers[prompt.id] = await runPrompt(prompt);
+  prompt<T extends PromptAction>(action: T): GeneratorBuilder<[...TPrompts, T]> {
+    return new GeneratorBuilder<[...TPrompts, T]>(this.name, [...this.prompts, action]);
   }
 
-  const tree = config.template({ answers: answers as ExtractAnswers<TPrompts> });
-  const nodes = Array.isArray(tree) ? tree : [tree];
+  render(
+    fn: (ctx: { answers: ExtractAnswers<TPrompts> }) => any,
+  ): RunnableGenerator<TPrompts> {
+    return new RunnableGenerator(this.name, this.prompts, fn);
+  }
+}
 
-  const files = await emit(...nodes);
-  await write(files);
+export class RunnableGenerator<TPrompts extends readonly PromptAction[] = []> {
+  private renderFn: (ctx: { answers: Record<string, unknown> }) => any;
 
-  clack.outro(
-    `Done! Generated ${files.length} file${files.length === 1 ? "" : "s"} in ${config.name}`,
-  );
+  constructor(
+    private name: string,
+    private prompts: PromptAction[],
+    renderFn: (ctx: { answers: ExtractAnswers<TPrompts> }) => any,
+  ) {
+    this.renderFn = renderFn as (ctx: { answers: Record<string, unknown> }) => any;
+  }
 
-  if (config.onSuccess) {
-    config.onSuccess({ answers: answers as ExtractAnswers<TPrompts> });
+  async run(options?: {
+    onSuccess?: (ctx: { answers: ExtractAnswers<TPrompts> }) => void;
+  }): Promise<void> {
+    const answers: Record<string, unknown> = {};
+
+    clack.intro(`ts-create: ${this.name}`);
+
+    for (const prompt of this.prompts) {
+      answers[prompt.id] = await runPrompt(prompt);
+    }
+
+    const tree = this.renderFn({ answers: answers as ExtractAnswers<TPrompts> });
+    const nodes = Array.isArray(tree) ? tree : [tree];
+
+    const files = await emit(...nodes);
+    await write(files);
+
+    clack.outro(
+      `Done! Generated ${files.length} file${files.length === 1 ? "" : "s"} in ${this.name}`,
+    );
+
+    if (options?.onSuccess) {
+      options.onSuccess({ answers: answers as ExtractAnswers<TPrompts> });
+    }
   }
 }

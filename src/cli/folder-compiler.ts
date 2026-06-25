@@ -355,7 +355,7 @@ export async function compileFolder(sourcePath: string): Promise<CompileResult> 
 
   const imports = importLines.join(";\n") + ";\n";
 
-  const body = renderNode({ type: "dir", name: folderName, children: tree }, 3, externalContents);
+  const body = renderNode({ type: "dir", name: folderName, children: tree }, 2, externalContents);
 
   const contentFiles: CompiledFile[] = [];
   for (const [relPath, ext] of externalContents) {
@@ -375,33 +375,23 @@ export async function compileFolder(sourcePath: string): Promise<CompileResult> 
       singleFile.name !== "package.json" ? externalContents.get(singleFile.relPath) : undefined;
     const singleBody =
       singleFile.name === "package.json"
-        ? renderPackageJsonNode(singleFile.content, 3)
+        ? renderPackageJsonNode(singleFile.content, 2)
         : external
-          ? `${"  ".repeat(3)}file(${JSON.stringify(folderName + "/" + singleFile.name)}, ${external.varName})`
-          : `${"  ".repeat(3)}file(${JSON.stringify(folderName + "/" + singleFile.name)})`;
+          ? `${"  ".repeat(2)}file(${JSON.stringify(folderName + "/" + singleFile.name)}, ${external.varName})`
+          : `${"  ".repeat(2)}file(${JSON.stringify(folderName + "/" + singleFile.name)})`;
 
     mainCode = `${imports}
-export default generator({
-  name: ${JSON.stringify(folderName)},
-  prompts: [],
-  template(ctx) {
-    return [
+export default generator({ name: ${JSON.stringify(folderName)} })
+  .render(({ answers }) => [
 ${singleBody},
-    ];
-  },
-});
+  ]);
 `;
   } else {
     mainCode = `${imports}
-export default generator({
-  name: ${JSON.stringify(folderName)},
-  prompts: [],
-  template(ctx) {
-    return [
+export default generator({ name: ${JSON.stringify(folderName)} })
+  .render(({ answers }) => [
 ${body},
-    ];
-  },
-});
+  ]);
 `;
   }
 
