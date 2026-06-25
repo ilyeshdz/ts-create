@@ -28,18 +28,27 @@ export type PromptAction<TId extends string = string> =
   | ConfirmAction<TId>
   | SelectAction<TId, string>;
 
-export type ExtractAnswers<T extends readonly PromptAction[]> = {
-  [K in T[number] as K extends { readonly id: infer I }
+type AnswerType<T> = T extends TextAction<any>
+  ? string
+  : T extends ConfirmAction<any>
+    ? boolean
+    : T extends SelectAction<any, infer O>
+      ? O
+      : never;
+
+export type ExtractAnswers<
+  T extends readonly PromptAction[],
+  TCond extends readonly boolean[] = [],
+> = {
+  [K in keyof T as T[K] extends { readonly id: infer I }
     ? I extends string
       ? I
       : never
-    : never]: K extends TextAction<any>
-    ? string
-    : K extends ConfirmAction<any>
-      ? boolean
-      : K extends SelectAction<any, infer O>
-        ? O
-        : never;
+    : never]: K extends keyof TCond
+    ? TCond[K] extends true
+      ? AnswerType<T[K]> | undefined
+      : AnswerType<T[K]>
+    : AnswerType<T[K]>;
 };
 
 export type DepItem = string | { readonly name: string; readonly version?: string };

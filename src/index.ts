@@ -44,6 +44,11 @@ export function select<TId extends string, TOption extends string>(
   return { type: "select", id, question, options, ...opts };
 }
 
+interface PromptEntry {
+  action: PromptAction;
+  when?: (answers: Record<string, unknown>) => boolean;
+}
+
 async function runPrompt(p: PromptAction): Promise<unknown> {
   let result: unknown;
 
@@ -84,46 +89,70 @@ export function generator(config: { name: string }): GeneratorBuilder<[]> {
   return new GeneratorBuilder(config.name);
 }
 
-export class GeneratorBuilder<TPrompts extends readonly PromptAction[] = []> {
+export class GeneratorBuilder<
+  TPrompts extends readonly PromptAction[] = [],
+  TCond extends readonly boolean[] = [],
+> {
   constructor(
     private name: string,
-    private prompts: PromptAction[] = [],
+    private entries: PromptEntry[] = [],
   ) {}
 
-  prompt<T extends PromptAction>(action: T): GeneratorBuilder<[...TPrompts, T]> {
-    return new GeneratorBuilder<[...TPrompts, T]>(this.name, [...this.prompts, action]);
+  prompt<T extends PromptAction>(
+    action: T,
+    options?: { when?: never },
+  ): GeneratorBuilder<[...TPrompts, T], [...TCond, false]>;
+  prompt<T extends PromptAction>(
+    action: T,
+    options: { when: (answers: ExtractAnswers<TPrompts, TCond>) => boolean },
+  ): GeneratorBuilder<[...TPrompts, T], [...TCond, true]>;
+  prompt<T extends PromptAction>(
+    action: T,
+    options?: { when?: (answers: ExtractAnswers<TPrompts, TCond>) => boolean },
+  ): any {
+    const whenFn = options?.when as ((answers: Record<string, unknown>) => boolean) | undefined;
+    return new GeneratorBuilder(
+      this.name,
+      [...this.entries, { action, when: whenFn }],
+    );
   }
 
   render(
-    fn: (ctx: { answers: ExtractAnswers<TPrompts> }) => any,
-  ): RunnableGenerator<TPrompts> {
-    return new RunnableGenerator(this.name, this.prompts, fn);
+    fn: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => any,
+  ): RunnableGenerator<TPrompts, TCond> {
+    return new RunnableGenerator(this.name, this.entries, fn);
   }
 }
 
-export class RunnableGenerator<TPrompts extends readonly PromptAction[] = []> {
+export class RunnableGenerator<
+  TPrompts extends readonly PromptAction[] = [],
+  TCond extends readonly boolean[] = [],
+> {
   private renderFn: (ctx: { answers: Record<string, unknown> }) => any;
 
   constructor(
     private name: string,
-    private prompts: PromptAction[],
-    renderFn: (ctx: { answers: ExtractAnswers<TPrompts> }) => any,
+    private entries: PromptEntry[],
+    renderFn: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => any,
   ) {
     this.renderFn = renderFn as (ctx: { answers: Record<string, unknown> }) => any;
   }
 
   async run(options?: {
-    onSuccess?: (ctx: { answers: ExtractAnswers<TPrompts> }) => void;
+    onSuccess?: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => void;
   }): Promise<void> {
     const answers: Record<string, unknown> = {};
 
     clack.intro(`ts-create: ${this.name}`);
 
-    for (const prompt of this.prompts) {
-      answers[prompt.id] = await runPrompt(prompt);
+    for (const entry of this.entries) {
+      const show = entry.when ? entry.when(answers) : true;
+      if (show) {
+        answers[entry.action.id] = await runPrompt(entry.action);
+      }
     }
 
-    const tree = this.renderFn({ answers: answers as ExtractAnswers<TPrompts> });
+    const tree = this.renderFn({ answers: answers as ExtractAnswers<TPrompts, TCond> });
     const nodes = Array.isArray(tree) ? tree : [tree];
 
     const files = await emit(...nodes);
@@ -134,7 +163,7 @@ export class RunnableGenerator<TPrompts extends readonly PromptAction[] = []> {
     );
 
     if (options?.onSuccess) {
-      options.onSuccess({ answers: answers as ExtractAnswers<TPrompts> });
+      options.onSuccess({ answers: answers as ExtractAnswers<TPrompts, TCond> });
     }
   }
 }

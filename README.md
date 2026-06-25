@@ -11,6 +11,7 @@ High-level scaffolding framework built on ts-treegen.
 ## features
 
 - **builder chain API:** type-safe composition — prompts accumulate types, render receives them.
+- **conditional prompts:** `when` option with fully typed previous answers.
 - **prompt-driven generation:** `text()`, `confirm()`, and `select()` prompts, fully typed.
 - **type-safe answers:** the render callback knows the exact shape of user input.
 - **`packageJson()` helper:** declare dependencies as names (latest auto-resolved) or pin versions.
@@ -46,6 +47,31 @@ await generator({ name: "my-app" })
 
 `answers` is **fully typed** — TypeScript infers `{ name: string; typescript: boolean; pkgManager: "pnpm" | "npm" | "yarn" }` from the prompts.
 
+### conditional prompts
+
+Use `when` to only show prompts when a condition is met:
+
+```ts
+await generator({ name: "my-app" })
+  .prompt(confirm("typescript", "Use TypeScript?", { default: true }))
+  .prompt(
+    text("tsconfig", "TSConfig path", { default: "tsconfig.json" }),
+    { when: (answers) => answers.typescript },
+  )
+  .render(({ answers }) =>
+    dir(".", [
+      answers.typescript && file("tsconfig.json", "{}"),
+      // answers.tsconfig is string | undefined — inferred from the when condition
+    ]),
+  )
+  .run();
+```
+
+The `when` callback receives all answers from prompts defined **before** it, fully typed.
+When a prompt is skipped, its answer is `undefined` — the type system reflects this via `string | undefined` instead of `string`.
+
+
+
 ### as a CLI
 
 ```sh
@@ -69,15 +95,24 @@ generator(config: { name: string }): GeneratorBuilder<[]>
 
 Starts a builder chain. `name` is used for the intro/outro messages during prompt execution.
 
-### `GeneratorBuilder<TPrompts>`
+### `GeneratorBuilder<TPrompts, TCond>`
 
 #### `.prompt(action)`
 
 ```ts
-builder.prompt<T extends PromptAction>(action: T): GeneratorBuilder<[...TPrompts, T]>
+// Simple — always show
+builder.prompt<T extends PromptAction>(action: T): GeneratorBuilder<[...TPrompts, T], [...TCond, false]>
+
+// Conditional — only show when condition is met
+builder.prompt<T extends PromptAction>(
+  action: T,
+  options: { when: (answers: ExtractAnswers<TPrompts, TCond>) => boolean },
+): GeneratorBuilder<[...TPrompts, T], [...TCond, true]>
 ```
 
 Accumulates a prompt. Each call returns a new builder with the prompt added to the type-level tuple.
+The `when` callback receives the answers from all prompts added before it, fully typed.
+Conditional prompts have their answer type widened to `T | undefined` in `ExtractAnswers`.
 
 **`text(id, question, opts?)`** — text input prompt.
 ```ts
@@ -104,19 +139,19 @@ Answer type: the literal union of `options`.
 
 ```ts
 builder.render(
-  fn: (ctx: { answers: ExtractAnswers<TPrompts> }) => any,
-): RunnableGenerator<TPrompts>
+  fn: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => any,
+): RunnableGenerator<TPrompts, TCond>
 ```
 
 Attaches the file-generation callback. The `answers` parameter is **fully inferred** from all accumulated prompts. The return value is passed to `emit()` from ts-treegen — return `PlateNode` trees or arrays of them.
 
-### `RunnableGenerator<TPrompts>`
+### `RunnableGenerator<TPrompts, TCond>`
 
 #### `.run(options?)`
 
 ```ts
 runnable.run(options?: {
-  onSuccess?: (ctx: { answers: ExtractAnswers<TPrompts> }) => void;
+  onSuccess?: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => void;
 }): Promise<void>
 ```
 
@@ -168,15 +203,20 @@ type PromptAction<TId extends string = string> =
   | ConfirmAction<TId>
   | SelectAction<TId, string>;
 
-type ExtractAnswers<T extends readonly PromptAction[]> = {
-  [K in T[number] as K extends { readonly id: infer I }
+type ExtractAnswers<
+  T extends readonly PromptAction[],
+  TCond extends readonly boolean[] = [],
+> = {
+  [K in keyof T as T[K] extends { readonly id: infer I }
     ? I extends string ? I : never
     : never]:
-      K extends TextAction<any>    ? string
-    : K extends ConfirmAction<any> ? boolean
-    : K extends SelectAction<any, infer O> ? O
-    : never;
+      K extends keyof TCond
+        ? TCond[K] extends true
+          ? AnswerType<T[K]> | undefined  // conditional prompt
+          : AnswerType<T[K]>              // always shown
+        : AnswerType<T[K]>;
 };
+// AnswerType<T> resolves to: string | boolean | TOption
 
 interface PackageJsonConfig {
   name?: string;

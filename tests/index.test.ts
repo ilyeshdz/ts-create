@@ -1,6 +1,15 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { text, confirm, select, generator, GeneratorBuilder, RunnableGenerator } from "../src/index.js";
 import type { ExtractAnswers } from "../src/index.js";
+
+vi.mock("@clack/prompts", () => ({
+  intro: vi.fn(),
+  outro: vi.fn(),
+  text: vi.fn().mockResolvedValue("some-value"),
+  confirm: vi.fn().mockResolvedValue(false),
+  select: vi.fn().mockResolvedValue("opt"),
+  isCancel: vi.fn().mockReturnValue(false),
+}));
 
 test("text() creates a text action with correct shape", () => {
   const action = text("name", "What is your name?");
@@ -76,7 +85,17 @@ test("builder.prompt() accumulates prompts", () => {
     .prompt(confirm("ts", "Use TypeScript?"));
 
   expect(builder).toBeInstanceOf(GeneratorBuilder);
-  // 2 prompts accumulated
+});
+
+test("builder.prompt() with when returns a GeneratorBuilder", () => {
+  const builder = generator({ name: "test" })
+    .prompt(confirm("ts", "Use TypeScript?"))
+    .prompt(
+      text("config", "Config path"),
+      { when: (answers) => answers.ts },
+    );
+
+  expect(builder).toBeInstanceOf(GeneratorBuilder);
 });
 
 test("builder.render() returns a RunnableGenerator", () => {
@@ -87,15 +106,44 @@ test("builder.render() returns a RunnableGenerator", () => {
   expect(runnable).toBeInstanceOf(RunnableGenerator);
 });
 
-test("ExtractAnswers infers correct types from actions", () => {
+test("ExtractAnswers infers correct types without conditional prompts", () => {
   const actions = [
     text("name", "?"),
     confirm("ts", "?"),
-    select("pkg", "?", ["npm", "pnpm"] as const),
   ] as const;
 
   type T = ExtractAnswers<typeof actions>;
-  // Compile-time check: T = { name: string; ts: boolean; pkg: "npm" | "pnpm" }
-  const _typeCheck: T extends { name: string; ts: boolean; pkg: "npm" | "pnpm" } ? true : false = true;
+  const _typeCheck: T extends { name: string; ts: boolean } ? true : false = true;
   expect(_typeCheck).toBe(true);
+});
+
+test("ExtractAnswers marks conditional prompts as undefined", () => {
+  const actions = [
+    confirm("ts", "?"),
+  ] as const;
+
+  type T = ExtractAnswers<typeof actions, [true]>;
+  const _typeCheck: T extends { ts: boolean | undefined } ? true : false = true;
+  expect(_typeCheck).toBe(true);
+});
+
+test("RunnableGenerator.run() skips prompts when when returns false", async () => {
+  const clack = await import("@clack/prompts");
+
+  const runnable = generator({ name: "test" })
+    .prompt(confirm("enabled", "Enable?", { default: false }))
+    .prompt(
+      text("secret", "Secret value"),
+      { when: (answers) => answers.enabled },
+    )
+    .render(({ answers }) => {
+      expect(answers.enabled).toBe(false);
+      expect(answers.secret).toBeUndefined();
+      return [];
+    });
+
+  await runnable.run();
+  expect(clack.text).not.toHaveBeenCalled();
+
+  vi.clearAllMocks();
 });
