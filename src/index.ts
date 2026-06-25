@@ -1,4 +1,5 @@
 import { emit, write } from "ts-treegen";
+import type { VirtualFile } from "ts-treegen";
 import * as clack from "@clack/prompts";
 import type {
   PromptAction,
@@ -49,7 +50,11 @@ interface PromptEntry {
   when?: (answers: Record<string, unknown>) => boolean;
 }
 
-async function runPrompt(p: PromptAction): Promise<unknown> {
+type PromptResult =
+  | { readonly kind: "value"; readonly value: unknown }
+  | { readonly kind: "cancelled" };
+
+async function runPrompt(p: PromptAction): Promise<PromptResult> {
   let result: unknown;
 
   switch (p.type) {
@@ -78,12 +83,18 @@ async function runPrompt(p: PromptAction): Promise<unknown> {
   }
 
   if (clack.isCancel(result)) {
-    clack.cancel("Operation cancelled");
-    process.exit(0);
+    return { kind: "cancelled" };
   }
 
-  return result;
+  return { kind: "value", value: result };
 }
+
+export type RunResult<
+  TPrompts extends readonly PromptAction[] = readonly PromptAction[],
+  TCond extends readonly boolean[] = readonly boolean[],
+> =
+  | { readonly kind: "success"; readonly files: VirtualFile[]; readonly answers: ExtractAnswers<TPrompts, TCond> }
+  | { readonly kind: "cancelled" };
 
 export function generator(config: { name: string }): GeneratorBuilder<[]> {
   return new GeneratorBuilder(config.name);
@@ -140,7 +151,7 @@ export class RunnableGenerator<
 
   async run(options?: {
     onSuccess?: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => void;
-  }): Promise<void> {
+  }): Promise<RunResult<TPrompts, TCond>> {
     const answers: Record<string, unknown> = {};
 
     clack.intro(`ts-create: ${this.name}`);
@@ -148,7 +159,12 @@ export class RunnableGenerator<
     for (const entry of this.entries) {
       const show = entry.when ? entry.when(answers) : true;
       if (show) {
-        answers[entry.action.id] = await runPrompt(entry.action);
+        const result = await runPrompt(entry.action);
+        if (result.kind === "cancelled") {
+          clack.cancel("Operation cancelled");
+          return { kind: "cancelled" };
+        }
+        answers[entry.action.id] = result.value;
       }
     }
 
@@ -165,5 +181,7 @@ export class RunnableGenerator<
     if (options?.onSuccess) {
       options.onSuccess({ answers: answers as ExtractAnswers<TPrompts, TCond> });
     }
+
+    return { kind: "success", files, answers: answers as ExtractAnswers<TPrompts, TCond> };
   }
 }
