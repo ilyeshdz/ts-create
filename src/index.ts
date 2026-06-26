@@ -108,7 +108,11 @@ export type RunResult<
   TPrompts extends readonly PromptAction[] = readonly PromptAction[],
   TCond extends readonly boolean[] = readonly boolean[],
 > =
-  | { readonly kind: "success"; readonly files: VirtualFile[]; readonly answers: ExtractAnswers<TPrompts, TCond> }
+  | {
+      readonly kind: "success";
+      readonly files: VirtualFile[];
+      readonly answers: ExtractAnswers<TPrompts, TCond>;
+    }
   | { readonly kind: "cancelled" };
 
 export function generator(config: { name: string }): GeneratorBuilder<[]> {
@@ -119,15 +123,15 @@ export class GeneratorBuilder<
   TPrompts extends readonly PromptAction[] = [],
   TCond extends readonly boolean[] = [],
 > {
+  private renderFn: ((ctx: { answers: Record<string, unknown> }) => any) | undefined;
+
   constructor(
-    protected name: string,
-    protected entries: PromptEntry[] = [],
-    protected cmdEntries: CmdEntry[] = [],
+    private name: string,
+    private entries: PromptEntry[] = [],
+    private cmdEntries: CmdEntry[] = [],
   ) {}
 
-  prompt<T extends PromptAction>(
-    action: T,
-  ): GeneratorBuilder<[...TPrompts, T], [...TCond, false]>;
+  prompt<T extends PromptAction>(action: T): GeneratorBuilder<[...TPrompts, T], [...TCond, false]>;
   prompt<T extends PromptAction>(
     action: T,
     options: { when: (answers: ExtractAnswers<TPrompts, TCond>) => boolean },
@@ -154,36 +158,25 @@ export class GeneratorBuilder<
         | ((ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => string | Promise<string>);
     },
   ): this {
-    this.cmdEntries.push({ command: command as CmdEntry["command"], cwd: options?.cwd as CmdEntry["cwd"] });
+    this.cmdEntries.push({
+      command: command as CmdEntry["command"],
+      cwd: options?.cwd as CmdEntry["cwd"],
+    });
     return this;
   }
 
-  render(
-    fn: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => any,
-  ): RunnableGenerator<TPrompts, TCond> {
-    return new RunnableGenerator(this.name, this.entries, fn, this.cmdEntries);
-  }
-}
-
-export class RunnableGenerator<
-  TPrompts extends readonly PromptAction[] = [],
-  TCond extends readonly boolean[] = [],
-> extends GeneratorBuilder<TPrompts, TCond> {
-  private renderFn: (ctx: { answers: Record<string, unknown> }) => any;
-
-  constructor(
-    name: string,
-    entries: PromptEntry[],
-    renderFn: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => any,
-    cmdEntries: CmdEntry[] = [],
-  ) {
-    super(name, entries, cmdEntries);
-    this.renderFn = renderFn as (ctx: { answers: Record<string, unknown> }) => any;
+  render(fn: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => any): this {
+    this.renderFn = fn as (ctx: { answers: Record<string, unknown> }) => any;
+    return this;
   }
 
   async run(options?: {
     onSuccess?: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => void;
   }): Promise<RunResult<TPrompts, TCond>> {
+    if (!this.renderFn) {
+      throw new Error("render() must be called before run()");
+    }
+
     const answers: Record<string, unknown> = {};
 
     clack.intro(`ts-create: ${this.name}`);
@@ -209,10 +202,7 @@ export class RunnableGenerator<
     const ctx = { answers: answers as Record<string, unknown> };
 
     for (const entry of this.cmdEntries) {
-      const cmdStr =
-        typeof entry.command === "function"
-          ? await entry.command(ctx)
-          : entry.command;
+      const cmdStr = typeof entry.command === "function" ? await entry.command(ctx) : entry.command;
 
       const cwdStr = entry.cwd
         ? typeof entry.cwd === "function"
@@ -245,3 +235,8 @@ export class RunnableGenerator<
     return { kind: "success", files, answers: answers as ExtractAnswers<TPrompts, TCond> };
   }
 }
+
+export type RunnableGenerator<
+  TPrompts extends readonly PromptAction[] = readonly PromptAction[],
+  TCond extends readonly boolean[] = readonly boolean[],
+> = GeneratorBuilder<TPrompts, TCond>;
