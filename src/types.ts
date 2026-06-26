@@ -1,5 +1,14 @@
 import type { PlateNode, VirtualFile } from "ts-treegen";
 
+export interface CmdEntry {
+  command:
+    | string
+    | ((ctx: { answers: Record<string, unknown> }) => string | Promise<string>);
+  cwd?:
+    | string
+    | ((ctx: { answers: Record<string, unknown> }) => string | Promise<string>);
+}
+
 export interface TextAction<TId extends string> {
   readonly type: "text";
   readonly id: TId;

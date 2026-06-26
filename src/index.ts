@@ -1,5 +1,6 @@
 import { emit, write } from "ts-treegen";
 import type { VirtualFile } from "ts-treegen";
+import { exec as execCallback } from "node:child_process";
 import * as clack from "@clack/prompts";
 import type {
   PromptAction,
@@ -7,6 +8,7 @@ import type {
   TextAction,
   ConfirmAction,
   SelectAction,
+  CmdEntry,
 } from "./types.js";
 export type {
   PromptAction,
@@ -14,9 +16,22 @@ export type {
   TextAction,
   ConfirmAction,
   SelectAction,
+  CmdEntry,
   DepItem,
   PackageJsonConfig,
 } from "./types.js";
+
+function execCommand(
+  command: string,
+  options?: { cwd?: string },
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    execCallback(command, options, (error, stdout, stderr) => {
+      if (error) reject(error);
+      else resolve({ stdout: String(stdout), stderr: String(stderr) });
+    });
+  });
+}
 export { packageJson } from "./utils/package-json.js";
 export type { PlateNode, VirtualFile } from "ts-treegen";
 
@@ -107,6 +122,7 @@ export class GeneratorBuilder<
   constructor(
     private name: string,
     private entries: PromptEntry[] = [],
+    private cmdEntries: CmdEntry[] = [],
   ) {}
 
   prompt<T extends PromptAction>(
@@ -125,13 +141,34 @@ export class GeneratorBuilder<
     return new GeneratorBuilder(
       this.name,
       [...this.entries, { action, when: whenFn }],
+      this.cmdEntries,
+    );
+  }
+
+  cmd(
+    command:
+      | string
+      | ((ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => string | Promise<string>),
+    options?: {
+      cwd?:
+        | string
+        | ((ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => string | Promise<string>);
+    },
+  ): GeneratorBuilder<TPrompts, TCond> {
+    return new GeneratorBuilder(
+      this.name,
+      this.entries,
+      [
+        ...this.cmdEntries,
+        { command: command as CmdEntry["command"], cwd: options?.cwd as CmdEntry["cwd"] },
+      ],
     );
   }
 
   render(
     fn: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => any,
   ): RunnableGenerator<TPrompts, TCond> {
-    return new RunnableGenerator(this.name, this.entries, fn);
+    return new RunnableGenerator(this.name, this.entries, fn, this.cmdEntries);
   }
 }
 
@@ -140,13 +177,37 @@ export class RunnableGenerator<
   TCond extends readonly boolean[] = [],
 > {
   private renderFn: (ctx: { answers: Record<string, unknown> }) => any;
+  private cmdEntries: CmdEntry[];
 
   constructor(
     private name: string,
     private entries: PromptEntry[],
     renderFn: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => any,
+    cmdEntries: CmdEntry[] = [],
   ) {
     this.renderFn = renderFn as (ctx: { answers: Record<string, unknown> }) => any;
+    this.cmdEntries = cmdEntries;
+  }
+
+  cmd(
+    command:
+      | string
+      | ((ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => string | Promise<string>),
+    options?: {
+      cwd?:
+        | string
+        | ((ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => string | Promise<string>);
+    },
+  ): RunnableGenerator<TPrompts, TCond> {
+    return new RunnableGenerator(
+      this.name,
+      this.entries,
+      this.renderFn,
+      [
+        ...this.cmdEntries,
+        { command: command as CmdEntry["command"], cwd: options?.cwd as CmdEntry["cwd"] },
+      ],
+    );
   }
 
   async run(options?: {
@@ -173,6 +234,34 @@ export class RunnableGenerator<
 
     const files = await emit(...nodes);
     await write(files);
+
+    const ctx = { answers: answers as Record<string, unknown> };
+
+    for (const entry of this.cmdEntries) {
+      const cmdStr =
+        typeof entry.command === "function"
+          ? await entry.command(ctx)
+          : entry.command;
+
+      const cwdStr = entry.cwd
+        ? typeof entry.cwd === "function"
+          ? await entry.cwd(ctx)
+          : entry.cwd
+        : undefined;
+
+      const spinner = clack.spinner();
+      spinner.start(`Running: ${cmdStr}`);
+
+      try {
+        await execCommand(cmdStr, { cwd: cwdStr });
+        spinner.stop(`Completed: ${cmdStr}`);
+      } catch (err) {
+        spinner.stop(`Failed: ${cmdStr}`);
+        const message = err instanceof Error ? err.message : String(err);
+        clack.log.error(message);
+        throw err;
+      }
+    }
 
     clack.outro(
       `Done! Generated ${files.length} file${files.length === 1 ? "" : "s"} in ${this.name}`,
