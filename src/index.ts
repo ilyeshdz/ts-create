@@ -127,7 +127,6 @@ export class GeneratorBuilder<
 
   prompt<T extends PromptAction>(
     action: T,
-    options?: { when?: never },
   ): GeneratorBuilder<[...TPrompts, T], [...TCond, false]>;
   prompt<T extends PromptAction>(
     action: T,
