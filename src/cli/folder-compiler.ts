@@ -1,14 +1,14 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join, resolve, basename, relative } from "node:path";
 
-const LOCKFILES = new Set([
+export const DEFAULT_LOCKFILES: readonly string[] = [
   "pnpm-lock.yaml",
   "yarn.lock",
   "package-lock.json",
   "bun.lock",
   "bun.lockb",
   "deno.lock",
-]);
+];
 
 interface IgnoreRule {
   pattern: string;
@@ -122,6 +122,7 @@ async function walkDirectory(
   dirPath: string,
   sourcePath: string,
   rules: IgnoreRule[],
+  lockfiles: Set<string>,
 ): Promise<TreeNode[]> {
   const entries = await readdir(dirPath, { withFileTypes: true });
   const results: TreeNode[] = [];
@@ -137,10 +138,10 @@ async function walkDirectory(
     if (isIgnored(relPath, rules)) continue;
 
     if (entry.isDirectory()) {
-      const children = await walkDirectory(fullPath, sourcePath, rules);
+      const children = await walkDirectory(fullPath, sourcePath, rules, lockfiles);
       results.push({ type: "dir", name: entry.name, children });
     } else if (entry.isFile()) {
-      if (LOCKFILES.has(entry.name)) continue;
+      if (  lockfiles.has(entry.name)) continue;
       const buffer = await readFile(fullPath);
       const content = buffer.toString("utf-8");
       results.push({ type: "file", name: entry.name, relPath, content });
@@ -331,12 +332,16 @@ export interface CompileResult {
   files: CompiledFile[];
 }
 
-export async function compileFolder(sourcePath: string): Promise<CompileResult> {
+export async function compileFolder(
+  sourcePath: string,
+  options?: { lockfiles?: readonly string[] },
+): Promise<CompileResult> {
   const resolvedPath = resolve(sourcePath);
   const folderName = basename(resolvedPath);
   const rules = await loadIgnoreRules(resolvedPath);
+  const lockfiles = new Set(options?.lockfiles ?? DEFAULT_LOCKFILES);
 
-  const tree = await walkDirectory(resolvedPath, resolvedPath, rules);
+  const tree = await walkDirectory(resolvedPath, resolvedPath, rules, lockfiles);
   const totalFiles = countFiles(tree);
 
   const externalContents = collectExternalContents(tree);
