@@ -1,12 +1,38 @@
-# @ilyeshdz/ts-create
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/npm/v/%40ilyeshdz%2Fts-create?logo=npm&label=%40ilyeshdz%2Fts-create&color=%234AE6A0">
+    <img src="https://img.shields.io/npm/v/%40ilyeshdz%2Fts-create?logo=npm&label=%40ilyeshdz%2Fts-create&color=%23121212" height="28">
+  </picture>
+</p>
 
-type safe project scaffolding
+<p align="center">
+  <a href="https://npmjs.org/package/@ilyeshdz/ts-create">
+    <img src="https://img.shields.io/npm/v/@ilyeshdz/ts-create?logo=npm&label=version&color=%234AE6A0" alt="npm version">
+  </a>
+  <a href="https://npmjs.org/package/@ilyeshdz/ts-create">
+    <img src="https://img.shields.io/npm/dm/@ilyeshdz/ts-create?logo=npm&label=downloads&color=%234AE6A0" alt="npm downloads">
+  </a>
+  <a href="https://github.com/ilyeshdz/ts-create/blob/main/LICENSE">
+    <img src="https://img.shields.io/npm/l/@ilyeshdz/ts-create?label=license&color=%234AE6A0" alt="license">
+  </a>
+  <a href="https://github.com/ilyeshdz/ts-create/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/ilyeshdz/ts-create/ci.yml?logo=github&label=ci&color=%234AE6A0" alt="CI">
+  </a>
+</p>
 
-[![Open on npmx.dev](https://npmx.dev/api/registry/badge/version/@ilyeshdz/ts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
-[![Open on npmx.dev](https://npmx.dev/api/registry/badge/size/@ilyeshdz/ts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
-[![Open on npmx.dev](https://npmx.dev/api/registry/badge/license/@ilyeshdz/ts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
+<p align="center">
+  <b>Type-safe project scaffolding.</b> Define prompts, generate files, run commands — all with full type inference from end to end.
+</p>
 
-## example
+---
+
+## Install
+
+```sh
+npm install @ilyeshdz/ts-create
+```
+
+## Quick start
 
 ```ts
 import { generator, text, confirm, select, packageJson } from "@ilyeshdz/ts-create";
@@ -19,10 +45,7 @@ await generator({ name: "my-app" })
   .render(({ answers }) =>
     dir(".", [
       answers.typescript && file("tsconfig.json", "{ /* ... */ }"),
-      file("package.json", packageJson({
-        name: answers.name,
-        devDependencies: ["typescript"],
-      })),
+      file("package.json", packageJson({ name: answers.name, devDependencies: ["typescript"] })),
       file("README.md", `# ${answers.name}`),
     ]),
   )
@@ -31,71 +54,77 @@ await generator({ name: "my-app" })
   .run();
 ```
 
-`answers` is fully inferred: `{ name: string; typescript: boolean; pkg: "pnpm" | "npm" | "yarn" }`.
+`answers` is fully inferred: `{ name: string; typescript: boolean; pkg: "pnpm" | "npm" | "yarn" }`. Conditional prompts become `T | undefined`.
 
-## install
-
-```sh
-npm install @ilyeshdz/ts-create
-```
-
-## api
+## API
 
 ### `generator({ name })`
 
-Starts a builder chain.
+Start a builder chain.
 
 ### `.prompt(action, opts?)`
 
-Accumulates a prompt. `opts.when` makes it conditional — skipped prompts become `T | undefined` in the answer type.
+Accumulate a prompt. Pass `{ when: (answers) => boolean }` to make it conditional.
 
 ```ts
-text(id, question, opts?)         // → string
-confirm(id, question, opts?)      // → boolean
-select(id, question, options, opts?) // → literal union of options
+text("id", "Question?", { default: "value" })          // → string
+confirm("id", "Question?", { default: true })            // → boolean
+select("id", "Question?", ["a", "b"] as const)           // → "a" | "b"
 ```
 
 ### `.render(fn)`
 
-Attaches file generation. Receives fully typed `{ answers }`. Return `PlateNode` trees from `ts-treegen` (`file()`, `dir()`, etc.).
+Attach file generation. Receives `{ answers }` — return `file()`, `dir()`, or `packageJson()` nodes from `ts-treegen`.
 
-### `.cmd(command, opts?)`
+### `.cmd(command, opts?)
 
-Registers a post-generation shell command. `command` can be a string or a function receiving `{ answers }`. Accepts `opts.cwd` as string or function.
+Register a post-generation shell command.
 
 ```ts
 .cmd("npm install")
 .cmd(({ answers }) => `${answers.pkg} install`)
-.cmd("npm install", { cwd: "./packages/app" })
+.cmd("npm install", { cwd: ({ answers }) => `./${answers.dir}` })
 ```
-
-Chainable before or after `.render()`.
 
 ### `.run(opts?)`
 
-Executes everything: prompts → render → write files → run commands. Accepts `opts.onSuccess`.
+Execute prompts → render → write files → run commands.
+
+```ts
+.run()                                   // default
+.run({ dryRun: true })                   // preview without writing
+.run({ onSuccess: ({ answers }) => {} }) // callback after success
+```
 
 ### `packageJson(config)`
 
-Declares `package.json` with auto-resolved dependency versions. String deps resolve to latest via npm registry; pin with `{ name, version }`.
+Declare `package.json` with auto-resolved dependency versions. String deps resolve to latest from the npm registry; use `{ name, version }` to pin.
 
----
-
-## cli
-
-```sh
-npx ts-create <source-folder> [output-dir]
+```ts
+packageJson({
+  name: "my-app",
+  dependencies: ["express"],       // resolves to latest
+  devDependencies: [{ name: "typescript", version: "5.7" }],
+})
 ```
 
-Reverse-engineer any project folder into a reusable `generator.ts` scaffold. Respects `.gitignore`, skips hidden files and lockfiles.
+## CLI
+
+Reverse-engineer any project folder into a reusable generator.
 
 ```sh
-$ ts-create ./my-project ./scaffolds
-# → scaffolds/generator.ts + scaffolds/_contents/*.ts
+npx ts-create <source-folder> [output-dir] [options]
 ```
 
-Add prompts with `.prompt()`, then reference `answers` in the render callback.
+```sh
+ts-create ./my-project ./scaffolds
+```
 
-## license
+| Option | Description |
+|--------|-------------|
+| `--lockfiles <list>` | Comma-separated lockfiles to ignore (default: `pnpm-lock.yaml,yarn.lock,package-lock.json,bun.lock,bun.lockb,deno.lock`) |
+| `--skip-hidden` | Skip dotfiles and dot-directories |
+
+## License
 
 MIT
