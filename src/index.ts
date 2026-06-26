@@ -236,7 +236,3 @@ export class GeneratorBuilder<
   }
 }
 
-export type RunnableGenerator<
-  TPrompts extends readonly PromptAction[] = readonly PromptAction[],
-  TCond extends readonly boolean[] = readonly boolean[],
-> = GeneratorBuilder<TPrompts, TCond>;
