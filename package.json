@@ -2,7 +2,7 @@
   "name": "@ilyeshdz/ts-create",
   "version": "0.2.0",
   "private": false,
-  "description": "Type-safe scaffolding — prompts, files, and post-generation commands, fully typed",
+  "description": "type safe project scaffolding",
   "homepage": "https://github.com/ilyeshdz/ts-create#readme",
   "bugs": {
     "url": "https://github.com/ilyeshdz/ts-create/issues"

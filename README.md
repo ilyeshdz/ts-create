@@ -1,6 +1,6 @@
 # @ilyeshdz/ts-create
 
-Type-safe scaffolding — prompts, files, and post-generation commands, fully typed.
+type safe project scaffolding
 
 [![Open on npmx.dev](https://npmx.dev/api/registry/badge/version/@ilyeshdz/ts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
 [![Open on npmx.dev](https://npmx.dev/api/registry/badge/size/@ilyeshdz/ts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
