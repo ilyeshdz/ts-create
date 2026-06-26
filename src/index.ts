@@ -123,12 +123,11 @@ export class GeneratorBuilder<
   TPrompts extends readonly PromptAction[] = [],
   TCond extends readonly boolean[] = [],
 > {
-  private renderFn: ((ctx: { answers: Record<string, unknown> }) => any) | undefined;
-
   constructor(
     private name: string,
     private entries: PromptEntry[] = [],
     private cmdEntries: CmdEntry[] = [],
+    private renderFn?: (ctx: { answers: Record<string, unknown> }) => any,
   ) {}
 
   prompt<T extends PromptAction>(action: T): GeneratorBuilder<[...TPrompts, T], [...TCond, false]>;
@@ -145,6 +144,7 @@ export class GeneratorBuilder<
       this.name,
       [...this.entries, { action, when: whenFn }],
       this.cmdEntries,
+      this.renderFn,
     );
   }
 
@@ -157,17 +157,28 @@ export class GeneratorBuilder<
         | string
         | ((ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => string | Promise<string>);
     },
-  ): this {
-    this.cmdEntries.push({
-      command: command as CmdEntry["command"],
-      cwd: options?.cwd as CmdEntry["cwd"],
-    });
-    return this;
+  ): GeneratorBuilder<TPrompts, TCond> {
+    return new GeneratorBuilder(
+      this.name,
+      this.entries,
+      [
+        ...this.cmdEntries,
+        {
+          command: command as CmdEntry["command"],
+          cwd: options?.cwd as CmdEntry["cwd"],
+        },
+      ],
+      this.renderFn,
+    );
   }
 
-  render(fn: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => any): this {
-    this.renderFn = fn as (ctx: { answers: Record<string, unknown> }) => any;
-    return this;
+  render(fn: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => any): GeneratorBuilder<TPrompts, TCond> {
+    return new GeneratorBuilder(
+      this.name,
+      this.entries,
+      this.cmdEntries,
+      fn as (ctx: { answers: Record<string, unknown> }) => any,
+    );
   }
 
   async run(options?: {

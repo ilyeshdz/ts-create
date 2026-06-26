@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest";
-import { text, confirm, select, generator, GeneratorBuilder } from "../src/index.js";
+import { text, confirm, generator, GeneratorBuilder } from "../src/index.js";
 import type { ExtractAnswers } from "../src/index.js";
 
 test("generator() returns a GeneratorBuilder with empty prompts", () => {
