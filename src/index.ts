@@ -183,6 +183,7 @@ export class GeneratorBuilder<
 
   async run(options?: {
     onSuccess?: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => void;
+    dryRun?: boolean;
   }): Promise<RunResult<TPrompts, TCond>> {
     if (!this.renderFn) {
       throw new Error("render() must be called before run()");
@@ -208,42 +209,51 @@ export class GeneratorBuilder<
     const nodes = Array.isArray(tree) ? tree : [tree];
 
     const files = await emit(...nodes);
-    await write(files);
 
-    const ctx = { answers: answers as Record<string, unknown> };
+    if (!options?.dryRun) {
+      await write(files);
 
-    for (const entry of this.cmdEntries) {
-      const cmdStr = typeof entry.command === "function" ? await entry.command(ctx) : entry.command;
+      const ctx = { answers: answers as Record<string, unknown> };
 
-      const cwdStr = entry.cwd
-        ? typeof entry.cwd === "function"
-          ? await entry.cwd(ctx)
-          : entry.cwd
-        : undefined;
+      for (const entry of this.cmdEntries) {
+        const cmdStr = typeof entry.command === "function" ? await entry.command(ctx) : entry.command;
 
-      const spinner = clack.spinner();
-      spinner.start(`Running: ${cmdStr}`);
+        const cwdStr = entry.cwd
+          ? typeof entry.cwd === "function"
+            ? await entry.cwd(ctx)
+            : entry.cwd
+          : undefined;
 
-      try {
-        await execCommand(cmdStr, { cwd: cwdStr });
-        spinner.stop(`Completed: ${cmdStr}`);
-      } catch (err) {
-        spinner.stop(`Failed: ${cmdStr}`);
-        const message = err instanceof Error ? err.message : String(err);
-        clack.log.error(message);
-        throw err;
+        const spinner = clack.spinner();
+        spinner.start(`Running: ${cmdStr}`);
+
+        try {
+          await execCommand(cmdStr, { cwd: cwdStr });
+          spinner.stop(`Completed: ${cmdStr}`);
+        } catch (err) {
+          spinner.stop(`Failed: ${cmdStr}`);
+          const message = err instanceof Error ? err.message : String(err);
+          clack.log.error(message);
+          throw err;
+        }
       }
     }
 
     clack.outro(
-      `Done! Generated ${files.length} file${files.length === 1 ? "" : "s"} in ${this.name}`,
+      options?.dryRun
+        ? `Dry run: would generate ${files.length} file${files.length === 1 ? "" : "s"} in ${this.name}`
+        : `Done! Generated ${files.length} file${files.length === 1 ? "" : "s"} in ${this.name}`,
     );
 
     if (options?.onSuccess) {
       options.onSuccess({ answers: answers as ExtractAnswers<TPrompts, TCond> });
     }
 
-    return { kind: "success", files, answers: answers as ExtractAnswers<TPrompts, TCond> };
+    return {
+      kind: "success",
+      files,
+      answers: answers as ExtractAnswers<TPrompts, TCond>,
+    };
   }
 }
 
