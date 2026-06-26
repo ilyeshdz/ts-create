@@ -123,6 +123,7 @@ async function walkDirectory(
   sourcePath: string,
   rules: IgnoreRule[],
   lockfiles: Set<string>,
+  skipHidden: boolean,
 ): Promise<TreeNode[]> {
   const entries = await readdir(dirPath, { withFileTypes: true });
   const results: TreeNode[] = [];
@@ -131,14 +132,14 @@ async function walkDirectory(
     const fullPath = join(dirPath, entry.name);
 
     if (entry.isSymbolicLink()) continue;
-    if (entry.name.startsWith(".")) continue;
+    if (skipHidden && entry.name.startsWith(".")) continue;
 
     const relPath = relative(sourcePath, fullPath);
 
     if (isIgnored(relPath, rules)) continue;
 
     if (entry.isDirectory()) {
-      const children = await walkDirectory(fullPath, sourcePath, rules, lockfiles);
+      const children = await walkDirectory(fullPath, sourcePath, rules, lockfiles, skipHidden);
       results.push({ type: "dir", name: entry.name, children });
     } else if (entry.isFile()) {
       if (  lockfiles.has(entry.name)) continue;
@@ -334,14 +335,15 @@ export interface CompileResult {
 
 export async function compileFolder(
   sourcePath: string,
-  options?: { lockfiles?: readonly string[] },
+  options?: { lockfiles?: readonly string[]; skipHidden?: boolean },
 ): Promise<CompileResult> {
   const resolvedPath = resolve(sourcePath);
   const folderName = basename(resolvedPath);
   const rules = await loadIgnoreRules(resolvedPath);
   const lockfiles = new Set(options?.lockfiles ?? DEFAULT_LOCKFILES);
+  const skipHidden = options?.skipHidden ?? false;
 
-  const tree = await walkDirectory(resolvedPath, resolvedPath, rules, lockfiles);
+  const tree = await walkDirectory(resolvedPath, resolvedPath, rules, lockfiles, skipHidden);
   const totalFiles = countFiles(tree);
 
   const externalContents = collectExternalContents(tree);

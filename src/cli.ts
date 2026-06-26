@@ -22,12 +22,14 @@ ARGUMENTS
 
 OPTIONS
   --lockfiles     Comma-separated list of lockfile names to ignore (default: pnpm-lock.yaml,yarn.lock,package-lock.json,bun.lock,bun.lockb,deno.lock)
+  --skip-hidden   Skip hidden files and directories (those starting with a dot)
 
 EXAMPLE
   $ ts-create ./my-project
   $ ts-create ./my-project ./output
   $ ts-create .
   $ ts-create ./my-project --lockfiles pnpm-lock.yaml,deno.lock
+  $ ts-create ./my-project --skip-hidden
 `);
 }
 
@@ -39,14 +41,14 @@ async function writeFiles(files: CompiledFile[], baseDir: string): Promise<void>
   }
 }
 
-async function run(sourcePath: string, outputDir: string, lockfiles?: string[]): Promise<void> {
+async function run(sourcePath: string, outputDir: string, lockfiles?: string[], skipHidden?: boolean): Promise<void> {
   clack.intro("ts-create");
 
   const spinner = clack.spinner();
   spinner.start(`Compiling ${sourcePath}`);
 
   try {
-    const result = await compileFolder(sourcePath, { lockfiles });
+    const result = await compileFolder(sourcePath, { lockfiles, skipHidden });
 
     spinner.stop(`Found ${result.totalFiles} source file${result.totalFiles === 1 ? "" : "s"}`);
 
@@ -79,16 +81,21 @@ async function main(): Promise<void> {
   }
 
   let lockfiles: string[] | undefined;
+  let skipHidden: boolean | undefined;
   const positional = args.filter((a) => {
     if (a.startsWith("--lockfiles=")) {
       lockfiles = a.slice("--lockfiles=".length).split(",");
+      return false;
+    }
+    if (a === "--skip-hidden") {
+      skipHidden = true;
       return false;
     }
     return true;
   });
 
   const [sourcePath, outputDir = "."] = positional;
-  await run(sourcePath!, outputDir, lockfiles);
+  await run(sourcePath!, outputDir, lockfiles, skipHidden);
 }
 
 main();
