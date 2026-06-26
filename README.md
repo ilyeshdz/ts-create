@@ -36,7 +36,7 @@ await generator({ name: "my-app" })
 ## install
 
 ```sh
-npm install @ilyeshdz/ts-create ts-treegen
+npm install @ilyeshdz/ts-create
 ```
 
 ## api
