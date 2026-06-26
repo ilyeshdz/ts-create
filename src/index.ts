@@ -120,9 +120,9 @@ export class GeneratorBuilder<
   TCond extends readonly boolean[] = [],
 > {
   constructor(
-    private name: string,
-    private entries: PromptEntry[] = [],
-    private cmdEntries: CmdEntry[] = [],
+    protected name: string,
+    protected entries: PromptEntry[] = [],
+    protected cmdEntries: CmdEntry[] = [],
   ) {}
 
   prompt<T extends PromptAction>(
@@ -154,15 +154,9 @@ export class GeneratorBuilder<
         | string
         | ((ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => string | Promise<string>);
     },
-  ): GeneratorBuilder<TPrompts, TCond> {
-    return new GeneratorBuilder(
-      this.name,
-      this.entries,
-      [
-        ...this.cmdEntries,
-        { command: command as CmdEntry["command"], cwd: options?.cwd as CmdEntry["cwd"] },
-      ],
-    );
+  ): this {
+    this.cmdEntries.push({ command: command as CmdEntry["command"], cwd: options?.cwd as CmdEntry["cwd"] });
+    return this;
   }
 
   render(
@@ -175,39 +169,17 @@ export class GeneratorBuilder<
 export class RunnableGenerator<
   TPrompts extends readonly PromptAction[] = [],
   TCond extends readonly boolean[] = [],
-> {
+> extends GeneratorBuilder<TPrompts, TCond> {
   private renderFn: (ctx: { answers: Record<string, unknown> }) => any;
-  private cmdEntries: CmdEntry[];
 
   constructor(
-    private name: string,
-    private entries: PromptEntry[],
+    name: string,
+    entries: PromptEntry[],
     renderFn: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => any,
     cmdEntries: CmdEntry[] = [],
   ) {
+    super(name, entries, cmdEntries);
     this.renderFn = renderFn as (ctx: { answers: Record<string, unknown> }) => any;
-    this.cmdEntries = cmdEntries;
-  }
-
-  cmd(
-    command:
-      | string
-      | ((ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => string | Promise<string>),
-    options?: {
-      cwd?:
-        | string
-        | ((ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => string | Promise<string>);
-    },
-  ): RunnableGenerator<TPrompts, TCond> {
-    return new RunnableGenerator(
-      this.name,
-      this.entries,
-      this.renderFn,
-      [
-        ...this.cmdEntries,
-        { command: command as CmdEntry["command"], cwd: options?.cwd as CmdEntry["cwd"] },
-      ],
-    );
   }
 
   async run(options?: {
