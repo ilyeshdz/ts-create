@@ -172,7 +172,9 @@ export class GeneratorBuilder<
     );
   }
 
-  render(fn: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => any): GeneratorBuilder<TPrompts, TCond> {
+  render(
+    fn: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => any,
+  ): GeneratorBuilder<TPrompts, TCond> {
     return new GeneratorBuilder(
       this.name,
       this.entries,
@@ -216,7 +218,8 @@ export class GeneratorBuilder<
       const ctx = { answers: answers as Record<string, unknown> };
 
       for (const entry of this.cmdEntries) {
-        const cmdStr = typeof entry.command === "function" ? await entry.command(ctx) : entry.command;
+        const cmdStr =
+          typeof entry.command === "function" ? await entry.command(ctx) : entry.command;
 
         const cwdStr = entry.cwd
           ? typeof entry.cwd === "function"
@@ -256,4 +259,3 @@ export class GeneratorBuilder<
     };
   }
 }
-

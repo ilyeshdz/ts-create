@@ -142,7 +142,7 @@ async function walkDirectory(
       const children = await walkDirectory(fullPath, sourcePath, rules, lockfiles, skipHidden);
       results.push({ type: "dir", name: entry.name, children });
     } else if (entry.isFile()) {
-      if (  lockfiles.has(entry.name)) continue;
+      if (lockfiles.has(entry.name)) continue;
       const buffer = await readFile(fullPath);
       const content = buffer.toString("utf-8");
       results.push({ type: "file", name: entry.name, relPath, content });

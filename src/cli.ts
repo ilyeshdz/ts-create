@@ -41,7 +41,12 @@ async function writeFiles(files: CompiledFile[], baseDir: string): Promise<void>
   }
 }
 
-async function run(sourcePath: string, outputDir: string, lockfiles?: string[], skipHidden?: boolean): Promise<void> {
+async function run(
+  sourcePath: string,
+  outputDir: string,
+  lockfiles?: string[],
+  skipHidden?: boolean,
+): Promise<void> {
   clack.intro("ts-create");
 
   const spinner = clack.spinner();

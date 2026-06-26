@@ -1,12 +1,8 @@
 import type { PlateNode, VirtualFile } from "ts-treegen";
 
 export interface CmdEntry {
-  command:
-    | string
-    | ((ctx: { answers: Record<string, unknown> }) => string | Promise<string>);
-  cwd?:
-    | string
-    | ((ctx: { answers: Record<string, unknown> }) => string | Promise<string>);
+  command: string | ((ctx: { answers: Record<string, unknown> }) => string | Promise<string>);
+  cwd?: string | ((ctx: { answers: Record<string, unknown> }) => string | Promise<string>);
 }
 
 export interface TextAction<TId extends string> {
@@ -37,13 +33,14 @@ export type PromptAction<TId extends string = string> =
   | ConfirmAction<TId>
   | SelectAction<TId, string>;
 
-type AnswerType<T> = T extends TextAction<any>
-  ? string
-  : T extends ConfirmAction<any>
-    ? boolean
-    : T extends SelectAction<any, infer O>
-      ? O
-      : never;
+type AnswerType<T> =
+  T extends TextAction<any>
+    ? string
+    : T extends ConfirmAction<any>
+      ? boolean
+      : T extends SelectAction<any, infer O>
+        ? O
+        : never;
 
 export type ExtractAnswers<
   T extends readonly PromptAction[],
