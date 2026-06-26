@@ -1,10 +1,10 @@
-<h1 align="center">@ilyeshdz/ts-create</h1>
+# @ilyeshdz/ts-create
 
 [![Open on npmx.dev](https://npmx.dev/api/registry/badge/version/@ilyeshdz/ts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
 [![Open on npmx.dev](https://npmx.dev/api/registry/badge/size/@ilyeshdz/ts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
 [![Open on npmx.dev](https://npmx.dev/api/registry/badge/license/@ilyeshdz/ts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
 
-Type safe project scaffolding. Define prompts, generate files, run commands — all with full type inference from end to end.
+Type safe project scaffolding. Define prompts, generate files, run commands, all with full type inference from end to end.
 
 ## Install
 
