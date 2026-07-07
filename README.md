@@ -73,6 +73,7 @@ Execute prompts, render, write files, and run commands. After completion, prints
 ```ts
 .run()
 .run({ dryRun: true })
+.run({ targetDir: "./output" })
 .run({ onSuccess: ({ answers }) => {} })
 ```
 

@@ -186,6 +186,7 @@ export class GeneratorBuilder<
   async run(options?: {
     onSuccess?: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => void;
     dryRun?: boolean;
+    targetDir?: string;
   }): Promise<RunResult<TPrompts, TCond>> {
     if (!this.renderFn) {
       throw new Error("render() must be called before run()");
@@ -213,8 +214,10 @@ export class GeneratorBuilder<
     const files = await emit(...nodes);
     let planFiles;
 
+    const targetDir = options?.targetDir ?? process.cwd();
+
     if (!options?.dryRun) {
-      const p = await plan(files, { targetDir: process.cwd() });
+      const p = await plan(files, { targetDir });
       planFiles = p.files;
       await p.run();
 
@@ -228,7 +231,7 @@ export class GeneratorBuilder<
           ? typeof entry.cwd === "function"
             ? await entry.cwd(ctx)
             : entry.cwd
-          : undefined;
+          : targetDir;
 
         const spinner = clack.spinner();
         spinner.start(`Running: ${cmdStr}`);
