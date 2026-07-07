@@ -213,6 +213,7 @@ export class GeneratorBuilder<
     }) => "continue" | void;
     dryRun?: boolean;
     targetDir?: string;
+    overwrite?: boolean;
   }): Promise<RunResult<TPrompts, TCond>> {
     if (!this.renderFn) {
       throw new Error("render() must be called before run()");
@@ -243,7 +244,7 @@ export class GeneratorBuilder<
     const targetDir = options?.targetDir ?? process.cwd();
 
     if (!options?.dryRun) {
-      const p = await plan(files, { targetDir });
+      const p = await plan(files, { targetDir, overwrite: options?.overwrite });
       planFiles = p.files;
       await p.run();
 

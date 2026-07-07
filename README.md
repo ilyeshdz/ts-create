@@ -75,6 +75,7 @@ Execute prompts, render, write files, and run commands. After completion, prints
 .run()
 .run({ dryRun: true })
 .run({ targetDir: "./output" })
+.run({ overwrite: false })                              // skip existing files
 .run({ onSuccess: ({ answers }) => {} })
 .run({ onError: ({ error, command }) => "continue" })   // skip failed command
 ```
