@@ -8,6 +8,7 @@ import type {
   TextAction,
   ConfirmAction,
   SelectAction,
+  MultiselectAction,
   CmdEntry,
 } from "./types.js";
 export type {
@@ -16,6 +17,7 @@ export type {
   TextAction,
   ConfirmAction,
   SelectAction,
+  MultiselectAction,
   CmdEntry,
   DepItem,
   PackageJsonConfig,
@@ -60,6 +62,15 @@ export function select<TId extends string, TOption extends string>(
   return { type: "select", id, question, options, ...opts };
 }
 
+export function multiselect<TId extends string, TOption extends string>(
+  id: TId,
+  question: string,
+  options: readonly TOption[],
+  opts?: { required?: boolean; default?: readonly TOption[] },
+): MultiselectAction<TId, TOption> {
+  return { type: "multiselect", id, question, options, ...opts };
+}
+
 interface PromptEntry {
   action: PromptAction;
   when?: (answers: Record<string, unknown>) => boolean;
@@ -92,6 +103,16 @@ async function runPrompt(p: PromptAction): Promise<PromptResult> {
         message: p.question,
         options,
         initialValue: p.default,
+      });
+      break;
+    }
+    case "multiselect": {
+      const options = p.options.map((o) => ({ value: o, label: o }));
+      result = await clack.multiselect({
+        message: p.question,
+        options,
+        required: p.required,
+        initialValues: p.default ? [...p.default] : undefined,
       });
       break;
     }

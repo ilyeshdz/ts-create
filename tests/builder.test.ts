@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest";
-import { text, confirm, generator, GeneratorBuilder } from "../src/index.js";
+import { text, confirm, multiselect, generator, GeneratorBuilder } from "../src/index.js";
 import type { ExtractAnswers } from "../src/index.js";
 
 test("generator() returns a GeneratorBuilder with empty prompts", () => {
@@ -36,6 +36,14 @@ test("ExtractAnswers infers correct types without conditional prompts", () => {
 
   type T = ExtractAnswers<typeof actions>;
   const _typeCheck: T extends { name: string; ts: boolean } ? true : false = true;
+  expect(_typeCheck).toBe(true);
+});
+
+test("ExtractAnswers infers multiselect as an array", () => {
+  const actions = [multiselect("tools", "?", ["a", "b"] as const)] as const;
+
+  type T = ExtractAnswers<typeof actions>;
+  const _typeCheck: T extends { tools: ("a" | "b")[] } ? true : false = true;
   expect(_typeCheck).toBe(true);
 });
 

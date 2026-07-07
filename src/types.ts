@@ -28,10 +28,20 @@ export interface SelectAction<TId extends string, TOption extends string> {
   readonly default?: TOption;
 }
 
+export interface MultiselectAction<TId extends string, TOption extends string> {
+  readonly type: "multiselect";
+  readonly id: TId;
+  readonly question: string;
+  readonly options: readonly TOption[];
+  readonly required?: boolean;
+  readonly default?: readonly TOption[];
+}
+
 export type PromptAction<TId extends string = string> =
   | TextAction<TId>
   | ConfirmAction<TId>
-  | SelectAction<TId, string>;
+  | SelectAction<TId, string>
+  | MultiselectAction<TId, string>;
 
 type AnswerType<T> =
   T extends TextAction<any>
@@ -40,7 +50,9 @@ type AnswerType<T> =
       ? boolean
       : T extends SelectAction<any, infer O>
         ? O
-        : never;
+        : T extends MultiselectAction<any, infer O>
+          ? O[]
+          : never;
 
 export type ExtractAnswers<
   T extends readonly PromptAction[],

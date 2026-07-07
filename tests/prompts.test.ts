@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { text, confirm, select } from "../src/index.js";
+import { text, confirm, select, multiselect } from "../src/index.js";
 
 test("text() creates a text action with correct shape", () => {
   const action = text("name", "What is your name?");
@@ -61,5 +61,30 @@ test("select() with default", () => {
     question: "Choose style",
     options: ["light", "dark"],
     default: "dark",
+  });
+});
+
+test("multiselect() creates a multiselect action", () => {
+  const action = multiselect("tools", "Select tools", ["a", "b", "c"]);
+  expect(action).toEqual({
+    type: "multiselect",
+    id: "tools",
+    question: "Select tools",
+    options: ["a", "b", "c"],
+  });
+});
+
+test("multiselect() with options", () => {
+  const action = multiselect("tools", "Select tools", ["a", "b", "c"] as const, {
+    required: true,
+    default: ["a", "b"],
+  });
+  expect(action).toEqual({
+    type: "multiselect",
+    id: "tools",
+    question: "Select tools",
+    options: ["a", "b", "c"],
+    required: true,
+    default: ["a", "b"],
   });
 });

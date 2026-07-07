@@ -7,6 +7,7 @@ vi.mock("@clack/prompts", () => ({
   text: vi.fn().mockResolvedValue("some-value"),
   confirm: vi.fn().mockResolvedValue(false),
   select: vi.fn().mockResolvedValue("opt"),
+  multiselect: vi.fn().mockResolvedValue(["a", "b"]),
   isCancel: vi.fn().mockReturnValue(false),
   log: {
     info: vi.fn(),

@@ -50,6 +50,7 @@ Accumulate a prompt. Pass `{ when: (answers) => boolean }` to make it conditiona
 text("id", "Question?", { default: "value" })          // -> string
 confirm("id", "Question?", { default: true })            // -> boolean
 select("id", "Question?", ["a", "b"] as const)           // -> "a" | "b"
+multiselect("id", "Question?", ["a", "b", "c"] as const) // -> ("a" | "b" | "c")[]
 ```
 
 ### `.render(fn)`
