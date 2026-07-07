@@ -206,6 +206,11 @@ export class GeneratorBuilder<
 
   async run(options?: {
     onSuccess?: (ctx: { answers: ExtractAnswers<TPrompts, TCond> }) => void;
+    onError?: (ctx: {
+      error: Error;
+      command: string;
+      answers: ExtractAnswers<TPrompts, TCond>;
+    }) => "continue" | void;
     dryRun?: boolean;
     targetDir?: string;
   }): Promise<RunResult<TPrompts, TCond>> {
@@ -262,9 +267,15 @@ export class GeneratorBuilder<
           spinner.stop(`Completed: ${cmdStr}`);
         } catch (err) {
           spinner.stop(`Failed: ${cmdStr}`);
-          const message = err instanceof Error ? err.message : String(err);
-          clack.log.error(message);
-          throw err;
+          const error = err instanceof Error ? err : new Error(String(err));
+          const answersCtx = answers as ExtractAnswers<TPrompts, TCond>;
+          clack.log.error(error.message);
+          if (options?.onError) {
+            const action = await options.onError({ error, command: cmdStr, answers: answersCtx });
+            if (action !== "continue") throw error;
+          } else {
+            throw error;
+          }
         }
       }
     }

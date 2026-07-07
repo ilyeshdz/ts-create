@@ -76,7 +76,10 @@ Execute prompts, render, write files, and run commands. After completion, prints
 .run({ dryRun: true })
 .run({ targetDir: "./output" })
 .run({ onSuccess: ({ answers }) => {} })
+.run({ onError: ({ error, command }) => "continue" })   // skip failed command
 ```
+
+When a command fails, the default behavior is to throw and abort. Pass `onError` returning `'continue'` to skip the failed command and proceed to the next one.
 
 ### `packageJson(config)`
 
