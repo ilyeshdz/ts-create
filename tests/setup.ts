@@ -3,6 +3,7 @@ import { vi } from "vitest";
 vi.mock("@clack/prompts", () => ({
   intro: vi.fn(),
   outro: vi.fn(),
+  cancel: vi.fn(),
   spinner: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })),
   text: vi.fn().mockResolvedValue("some-value"),
   confirm: vi.fn().mockResolvedValue(false),
