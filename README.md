@@ -4,7 +4,7 @@
 [![Open on npmx.dev](https://npmx.dev/api/registry/badge/size/@ilyeshdz/ts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
 [![Open on npmx.dev](https://npmx.dev/api/registry/badge/license/@ilyeshdz/ts-create)](https://npmx.dev/package/@ilyeshdz/ts-create)
 
-Type safe project scaffolding. Define prompts, generate files, run commands, all with full type inference from end to end.
+Type safe project scaffolding. Define prompts, generate files, run commands, all with full type inference from end to end. Built on [ts-treegen](https://github.com/ilyeshdz/ts-treegen) v1.
 
 ## Install
 
@@ -68,7 +68,7 @@ Register a post generation shell command.
 
 ### `.run(opts?)`
 
-Execute prompts, render, write files, and run commands.
+Execute prompts, render, write files, and run commands. After completion, prints a summary with write and skip counts.
 
 ```ts
 .run()
