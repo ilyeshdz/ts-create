@@ -1,2 +1,1 @@
-minimumReleaseAgeExclude:
-  - ts-treegen@0.3.0 || 0.3.2
+# empty workspace config (no exclusions needed)

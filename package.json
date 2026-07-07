@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.6.0",
-    "ts-treegen": "^0.3.2"
+    "ts-treegen": "^1.0.0"
   },
   "devDependencies": {
     "@release-it/conventional-changelog": "^11.0.1",

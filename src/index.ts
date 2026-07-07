@@ -1,4 +1,4 @@
-import { emit, write } from "ts-treegen";
+import { emit, plan } from "ts-treegen/node";
 import type { VirtualFile } from "ts-treegen";
 import { exec as execCallback } from "node:child_process";
 import * as clack from "@clack/prompts";
@@ -211,9 +211,12 @@ export class GeneratorBuilder<
     const nodes = Array.isArray(tree) ? tree : [tree];
 
     const files = await emit(...nodes);
+    let planFiles;
 
     if (!options?.dryRun) {
-      await write(files);
+      const p = await plan(files, { targetDir: process.cwd() });
+      planFiles = p.files;
+      await p.run();
 
       const ctx = { answers: answers as Record<string, unknown> };
 
@@ -242,11 +245,17 @@ export class GeneratorBuilder<
       }
     }
 
-    clack.outro(
-      options?.dryRun
-        ? `Dry run: would generate ${files.length} file${files.length === 1 ? "" : "s"} in ${this.name}`
-        : `Done! Generated ${files.length} file${files.length === 1 ? "" : "s"} in ${this.name}`,
-    );
+    if (options?.dryRun) {
+      clack.outro(
+        `Dry run: would generate ${files.length} file${files.length === 1 ? "" : "s"} in ${this.name}`,
+      );
+    } else {
+      const writeCount = planFiles ? planFiles.filter((f) => f.status === "write").length : 0;
+      const skipCount = planFiles ? planFiles.filter((f) => f.status === "skip").length : 0;
+      clack.outro(
+        `Done! Generated ${files.length} file${files.length === 1 ? "" : "s"} in ${this.name} (${writeCount} written, ${skipCount} skipped)`,
+      );
+    }
 
     if (options?.onSuccess) {
       options.onSuccess({ answers: answers as ExtractAnswers<TPrompts, TCond> });
