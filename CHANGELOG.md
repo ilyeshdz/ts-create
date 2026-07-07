@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0](https://github.com/ilyeshdz/ts-create/compare/0.3.0...0.4.0) (2026-07-07)
+
+### Features
+
+* add multiselect prompt ([f5eba5f](https://github.com/ilyeshdz/ts-create/commit/f5eba5f4a9b3cb4c96380bc30f09dc79999248b0))
+* add onError callback to run() ([408d7ea](https://github.com/ilyeshdz/ts-create/commit/408d7ea4bc12d806210ad18ca8556d70e7bece99))
+* add overwrite option to run() ([d873b2e](https://github.com/ilyeshdz/ts-create/commit/d873b2e5ab92103e5ae5299da7ba28a2dcc185bd))
+* add targetDir option to run() ([378f728](https://github.com/ilyeshdz/ts-create/commit/378f72839fe19d70625c1c58eb2ee3880ec980b5))
+* migrate ts-treegen from 0.3.2 to 1.0.0 ([8e01922](https://github.com/ilyeshdz/ts-create/commit/8e0192235623a3af910760c213a6f9ad9b5b69e9))
+
+### Documentation
+
+* update README for ts-treegen v1 migration ([99d51c5](https://github.com/ilyeshdz/ts-create/commit/99d51c573248fb5d9e7d082689fd295dce3e3427))
+
 ## [0.3.0](https://github.com/ilyeshdz/ts-create/compare/0.2.0...0.3.0) (2026-06-26)
 
 ### Features
